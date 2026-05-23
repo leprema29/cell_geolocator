@@ -145,3 +145,33 @@ button.secondary:hover { background: #cbd5e1; }
 .output:empty { display: none; }
 .output .err { color: #f87171; }
 .output .ok { color: #4ade80; }
+
+table.users {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 16px;
+    font-size: 13px;
+}
+table.users th, table.users td {
+    padding: 8px 10px;
+    text-align: left;
+    border-bottom: 1px solid #e2e8f0;
+}
+table.users th {
+    background: #f1f5f9;
+    color: #475569;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    font-size: 11px;
+}
+table.users tr:hover td { background: #f8fafc; }
+table.users .role-admin { color: #dc2626; font-weight: 600; }
+table.users .role-user { color: #2563eb; }
+table.users .status-on { color: #16a34a; font-weight: 600; }
+table.users .status-off { color: #94a3b8; }
+table.users button {
+    padding: 4px 10px;
+    font-size: 12px;
+    margin-right: 4px;
+}

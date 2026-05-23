@@ -34,6 +34,9 @@ public class User {
     @Column(nullable = false, length = 30)
     private String role;
 
+    @Column(nullable = false)
+    private boolean enabled;
+
     @Column(length = 500)
     private String refreshTokenHash;
 

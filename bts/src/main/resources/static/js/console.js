@@ -5,7 +5,9 @@ const STORE = {
     get refresh() { return localStorage.getItem('bts_refresh'); },
     set refresh(v) { v ? localStorage.setItem('bts_refresh', v) : localStorage.removeItem('bts_refresh'); },
     get user() { return localStorage.getItem('bts_user'); },
-    set user(v) { v ? localStorage.setItem('bts_user', v) : localStorage.removeItem('bts_user'); }
+    set user(v) { v ? localStorage.setItem('bts_user', v) : localStorage.removeItem('bts_user'); },
+    get role() { return localStorage.getItem('bts_role'); },
+    set role(v) { v ? localStorage.setItem('bts_role', v) : localStorage.removeItem('bts_role'); }
 };
 
 /* ---------- Tabs ---------- */
@@ -22,23 +24,40 @@ document.querySelectorAll('.tabs button').forEach(btn => {
 function refreshAuthBadge() {
     const badge = document.getElementById('authStatus');
     const btn = document.getElementById('logoutBtn');
+    const adminTab = document.getElementById('adminTab');
     if (STORE.access) {
-        badge.textContent = 'Connecté' + (STORE.user ? ' • ' + STORE.user : '');
+        const label = STORE.role === 'ROLE_ADMIN' ? ' (admin)' : '';
+        badge.textContent = 'Connecté' + (STORE.user ? ' • ' + STORE.user : '') + label;
         badge.className = 'badge ok';
         btn.hidden = false;
+        adminTab.hidden = STORE.role !== 'ROLE_ADMIN';
     } else {
         badge.textContent = 'Non connecté';
         badge.className = 'badge muted';
         btn.hidden = true;
+        adminTab.hidden = true;
     }
 }
 document.getElementById('logoutBtn').addEventListener('click', () => {
     STORE.access = null;
     STORE.refresh = null;
     STORE.user = null;
+    STORE.role = null;
     refreshAuthBadge();
 });
 refreshAuthBadge();
+
+async function fetchMe() {
+    try {
+        const r = await request('GET', '/auth/me', undefined, true);
+        if (r.ok) {
+            STORE.user = r.body.username;
+            STORE.role = r.body.role;
+            refreshAuthBadge();
+        }
+    } catch (e) { /* ignore */ }
+}
+if (STORE.access) fetchMe();
 
 /* ---------- HTTP helpers ---------- */
 async function request(method, path, body, requireAuth = false) {
@@ -94,6 +113,7 @@ async function login() {
             STORE.refresh = r.body.refreshToken;
             STORE.user = val('li_email');
             refreshAuthBadge();
+            await fetchMe();
         }
     } catch (e) { showError('out_login', e); }
 }
@@ -159,6 +179,99 @@ function showError(elId, e) {
     document.getElementById(elId).innerHTML = `<span class="err">ERROR</span>\n${escapeHtml(e.message || String(e))}`;
 }
 
+/* ---------- Admin: user management ---------- */
+async function refreshUsers() {
+    try {
+        const r = await request('GET', '/admin/users', undefined, true);
+        if (!r.ok) { show('out_admin', r); return; }
+        renderUsers(r.body);
+        document.getElementById('out_admin').textContent = '';
+    } catch (e) { showError('out_admin', e); }
+}
+
+function renderUsers(users) {
+    const tbody = document.querySelector('#usersTable tbody');
+    tbody.innerHTML = '';
+    users.forEach(u => {
+        const tr = document.createElement('tr');
+        const roleCls = u.role === 'ROLE_ADMIN' ? 'role-admin' : 'role-user';
+        const statusCls = u.enabled ? 'status-on' : 'status-off';
+        tr.innerHTML = `
+            <td>${u.id}</td>
+            <td>${escapeHtml(u.username)}</td>
+            <td>${escapeHtml(u.email)}</td>
+            <td><span class="${roleCls}">${u.role}</span></td>
+            <td><span class="${statusCls}">${u.enabled ? 'actif' : 'désactivé'}</span></td>
+            <td>${u.createdAt ? new Date(u.createdAt).toLocaleString() : ''}</td>
+            <td>
+                <button onclick="toggleRole(${u.id}, '${u.role}')">${u.role === 'ROLE_ADMIN' ? 'Rétrograder' : 'Promouvoir'}</button>
+                <button onclick="toggleEnabled(${u.id}, ${u.enabled})">${u.enabled ? 'Désactiver' : 'Activer'}</button>
+                <button onclick="resetPwd(${u.id})">Reset mdp</button>
+                <button class="secondary" onclick="deleteUser(${u.id}, '${escapeHtml(u.username)}')">Supprimer</button>
+            </td>`;
+        tbody.appendChild(tr);
+    });
+}
+
+function toggleNewUserForm() {
+    const f = document.getElementById('newUserForm');
+    f.hidden = !f.hidden;
+    if (!f.hidden) {
+        set('nu_username', ''); set('nu_email', ''); set('nu_password', '');
+        document.getElementById('nu_role').value = 'ROLE_USER';
+    }
+}
+
+async function createUser() {
+    try {
+        const r = await request('POST', '/admin/users', {
+            username: val('nu_username'),
+            email: val('nu_email'),
+            password: val('nu_password'),
+            role: val('nu_role')
+        }, true);
+        show('out_admin', r);
+        if (r.ok) {
+            toggleNewUserForm();
+            await refreshUsers();
+        }
+    } catch (e) { showError('out_admin', e); }
+}
+
+async function toggleRole(id, currentRole) {
+    const newRole = currentRole === 'ROLE_ADMIN' ? 'ROLE_USER' : 'ROLE_ADMIN';
+    const r = await request('PUT', `/admin/users/${id}`, { role: newRole }, true);
+    show('out_admin', r);
+    if (r.ok) await refreshUsers();
+}
+
+async function toggleEnabled(id, current) {
+    const r = await request('PUT', `/admin/users/${id}`, { enabled: !current }, true);
+    show('out_admin', r);
+    if (r.ok) await refreshUsers();
+}
+
+async function resetPwd(id) {
+    const newPassword = prompt('Nouveau mot de passe (min 6 caractères) :');
+    if (!newPassword) return;
+    const r = await request('POST', `/admin/users/${id}/reset-password`, { newPassword }, true);
+    show('out_admin', r);
+}
+
+async function deleteUser(id, username) {
+    if (!confirm(`Supprimer l'utilisateur "${username}" ?`)) return;
+    const r = await request('DELETE', `/admin/users/${id}`, undefined, true);
+    show('out_admin', r);
+    if (r.ok) await refreshUsers();
+}
+
+// Auto-load users when entering the admin tab
+document.querySelectorAll('.tabs button').forEach(btn => {
+    btn.addEventListener('click', () => {
+        if (btn.dataset.tab === 'admin' && STORE.role === 'ROLE_ADMIN') refreshUsers();
+    });
+});
+
 window.signup = signup;
 window.login = login;
 window.refresh = refresh;
@@ -167,3 +280,10 @@ window.fillOrange = fillOrange;
 window.fillMtn = fillMtn;
 window.cellsByArea = cellsByArea;
 window.coverage = coverage;
+window.refreshUsers = refreshUsers;
+window.toggleNewUserForm = toggleNewUserForm;
+window.createUser = createUser;
+window.toggleRole = toggleRole;
+window.toggleEnabled = toggleEnabled;
+window.resetPwd = resetPwd;
+window.deleteUser = deleteUser;

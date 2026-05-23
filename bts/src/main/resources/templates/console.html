@@ -21,6 +21,7 @@
     <button data-tab="geolocate">Géolocaliser</button>
     <button data-tab="cells">Cellules par zone</button>
     <button data-tab="coverage">Couverture</button>
+    <button data-tab="admin" id="adminTab" hidden>Admin</button>
 </nav>
 
 <main>
@@ -86,6 +87,44 @@
             </div>
             <button onclick="cellsByArea()">Lister les cellules</button>
             <pre class="output" id="out_cells"></pre>
+        </div>
+    </section>
+
+    <!-- ===================== ADMIN ===================== -->
+    <section data-panel="admin">
+        <div class="card">
+            <h2>Gestion des utilisateurs</h2>
+            <p class="hint">Réservé aux administrateurs. La liste se rafraîchit automatiquement.</p>
+            <div class="actions">
+                <button onclick="refreshUsers()">Rafraîchir</button>
+                <button class="secondary" onclick="toggleNewUserForm()">+ Nouvel utilisateur</button>
+            </div>
+
+            <div id="newUserForm" hidden style="margin-top:14px; padding:14px; background:#f8fafc; border-radius:8px;">
+                <div class="grid4">
+                    <label>Username <input id="nu_username"></label>
+                    <label>Email <input id="nu_email"></label>
+                    <label>Mot de passe <input id="nu_password" type="password"></label>
+                    <label>Rôle
+                        <select id="nu_role">
+                            <option value="ROLE_USER">ROLE_USER</option>
+                            <option value="ROLE_ADMIN">ROLE_ADMIN</option>
+                        </select>
+                    </label>
+                </div>
+                <div class="actions">
+                    <button onclick="createUser()">Créer</button>
+                    <button class="secondary" onclick="toggleNewUserForm()">Annuler</button>
+                </div>
+            </div>
+
+            <table class="users" id="usersTable">
+                <thead>
+                <tr><th>ID</th><th>Username</th><th>Email</th><th>Rôle</th><th>Statut</th><th>Créé le</th><th>Actions</th></tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+            <pre class="output" id="out_admin"></pre>
         </div>
     </section>
 

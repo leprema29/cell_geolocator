@@ -51,6 +51,9 @@ public class AuthService {
         if (!passwordEncoder.matches(rawPassword, user.getPassword())) {
             throw new ApiException(HttpStatus.UNAUTHORIZED, "Invalid credentials");
         }
+        if (!user.isEnabled()) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "Account is disabled");
+        }
 
         String access = jwtUtils.generateAccessToken(user.getUsername());
         String refresh = jwtUtils.generateRefreshToken(user.getUsername());
