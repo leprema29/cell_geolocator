@@ -38,7 +38,13 @@ public class SecurityConfig {
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
                                 "/v3/api-docs/**",
-                                "/h2-console/**"
+                                "/h2-console/**",
+                                "/",
+                                "/console",
+                                "/css/**",
+                                "/js/**",
+                                "/favicon.ico",
+                                "/webjars/**"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )

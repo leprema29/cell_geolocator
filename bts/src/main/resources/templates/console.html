@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>BTS Console - CIRT</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" th:href="@{/css/console.css}">
+</head>
+<body>
+<header>
+    <h1>📡 BTS Console</h1>
+    <div class="meta">
+        <span>API base: <code th:text="${apiBase}">/api/v1</code></span>
+        <span id="authStatus" class="badge muted">Non connecté</span>
+        <button id="logoutBtn" type="button" hidden>Se déconnecter</button>
+    </div>
+</header>
+
+<nav class="tabs">
+    <button data-tab="auth" class="active">Auth</button>
+    <button data-tab="geolocate">Géolocaliser</button>
+    <button data-tab="cells">Cellules par zone</button>
+    <button data-tab="coverage">Couverture</button>
+</nav>
+
+<main>
+    <!-- ===================== AUTH ===================== -->
+    <section data-panel="auth" class="active">
+        <div class="row">
+            <div class="card">
+                <h2>POST /auth/signup</h2>
+                <label>Username <input id="su_username" value="alice"></label>
+                <label>Email <input id="su_email" value="alice@example.com"></label>
+                <label>Password <input id="su_password" type="password" value="secret123"></label>
+                <button onclick="signup()">Créer le compte</button>
+                <pre class="output" id="out_signup"></pre>
+            </div>
+            <div class="card">
+                <h2>POST /auth/login</h2>
+                <label>Email <input id="li_email" value="alice@example.com"></label>
+                <label>Password <input id="li_password" type="password" value="secret123"></label>
+                <button onclick="login()">Se connecter</button>
+                <pre class="output" id="out_login"></pre>
+            </div>
+        </div>
+        <div class="card">
+            <h2>POST /auth/refresh</h2>
+            <p class="hint">Utilise le refresh token stocké après login.</p>
+            <button onclick="refresh()">Rafraîchir l'access token</button>
+            <pre class="output" id="out_refresh"></pre>
+        </div>
+    </section>
+
+    <!-- ===================== GEOLOCATE ===================== -->
+    <section data-panel="geolocate">
+        <div class="card">
+            <h2>POST /geolocate/priority</h2>
+            <p class="hint">Exemples : Orange CellID=5660227 / MTN MCC=624 MNC=01 LAC=102 CellID=21031</p>
+            <div class="grid4">
+                <label>MCC <input id="g_mcc" value="624"></label>
+                <label>MNC <input id="g_mnc" value="01"></label>
+                <label>LAC <input id="g_lac" value="102"></label>
+                <label>CellID <input id="g_cellid" value="21031"></label>
+            </div>
+            <div class="actions">
+                <button onclick="geolocate()">Géolocaliser</button>
+                <button class="secondary" onclick="fillOrange()">Préremplir Orange</button>
+                <button class="secondary" onclick="fillMtn()">Préremplir MTN</button>
+            </div>
+            <pre class="output" id="out_geo"></pre>
+        </div>
+    </section>
+
+    <!-- ===================== CELLS BY AREA ===================== -->
+    <section data-panel="cells">
+        <div class="card">
+            <h2>GET /cells/by-area</h2>
+            <div class="row">
+                <label>Zone (query) <input id="c_query" value="yaounde" placeholder="ex: yaounde, sud, south-west"></label>
+                <label>Provider
+                    <select id="c_provider">
+                        <option value="orange">orange</option>
+                        <option value="mtn">mtn</option>
+                    </select>
+                </label>
+            </div>
+            <button onclick="cellsByArea()">Lister les cellules</button>
+            <pre class="output" id="out_cells"></pre>
+        </div>
+    </section>
+
+    <!-- ===================== COVERAGE ===================== -->
+    <section data-panel="coverage">
+        <div class="card">
+            <h2>POST /coverage/penetration</h2>
+            <div class="row">
+                <label>Zone <input id="cv_area" value="Yaoundé" placeholder="ex: Yaoundé, Douala"></label>
+                <label>Rayon (m) <input id="cv_radius" type="number" value="1000"></label>
+                <label>Provider
+                    <select id="cv_provider">
+                        <option value="orange">orange</option>
+                        <option value="mtn">mtn</option>
+                    </select>
+                </label>
+            </div>
+            <button onclick="coverage()">Calculer la couverture</button>
+            <pre class="output" id="out_cov"></pre>
+        </div>
+    </section>
+</main>
+
+<script th:inline="javascript">
+    window.API_BASE = /*[[${apiBase}]]*/ '/api/v1';
+</script>
+<script th:src="@{/js/console.js}"></script>
+</body>
+</html>
